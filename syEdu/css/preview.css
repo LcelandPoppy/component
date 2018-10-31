@@ -1,0 +1,35 @@
+body,html{
+	width:100%;
+}
+.margin{
+	width:80%;
+	margin:10px auto;
+}
+#preview{
+	width:100%;
+}
+.img{
+	width:100%;
+}
+.title{
+	width:100px;
+	height:35px;
+	background:#037AFF;
+	border-radius: 5px;
+	color:#fff;
+	font:14px/35px "";
+	text-align: center;
+	margin:10px 0;
+}
+.content{
+	width:100%;
+}
+.content img{
+	width:70%;
+}
+.content video{
+	width:70%;
+}
+.content audio{
+	width:70%;
+}

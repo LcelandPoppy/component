@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" type="text/css" href="css/sweetalert.css"/>
+		<link rel="stylesheet" href="layui/css/layui.css" />
+		<link rel="stylesheet" href="css/sub.css" />
+		<script type="text/javascript" src="layui/layui.all.js" ></script>
+		<script type="text/javascript" src="js/jquery-1.11.3.js" ></script>
+		<script type="text/javascript" src="js/vue.js" ></script>
+		<script type="text/javascript" src="js/sweetalert.min.js" ></script>
+		<script type="text/javascript" src="js/ajax.js" ></script>
+		<title>沈阳教育平台提交页面</title>
+	</head>
+	<body>
+		<div id="sub">
+			<div class="margin">
+				<div v-for="(todo,index) in test" ref="childs" :is="todo.component" :title="todo.title" :fontsize="todo.fontsize" :id="todo.id" :index="index"></div>
+				<button @click="subInfor()" id="submit">提交</button>
+			</div>
+		</div>
+		<script>
+			//纯文本
+			var TextArea=Vue.extend({
+				props:['title','fontsize','index','id'],
+				data:function(){
+					return{
+						textArea:'',
+						size:''
+					}
+				},
+				template:'<div class="text">'+
+					     '<span><i>*</i>{{title}}</span>'+
+					     '<textarea placeholder="请输入内容" v-model="textArea" class="layui-textarea" :style="size"></textarea>'+
+				         '</div>',
+				mounted:function(){
+					console.log(this.fontsize);
+					if(this.fontsize=='undefined' || this.fontsize=='null'){
+						this.size='font-size:12px';
+					}else{
+						this.size='font-size:'+this.fontsize+'px';
+					}
+					this.$parent.list[this.index]="";
+				},
+				watch:{
+					textArea:{
+			          handler:function(){
+			            if(this.textArea.length==0){
+			            	this.$parent.list[this.index]="";
+			            }else{
+			            	this.$parent.list[this.index]={
+			            		"id":this.id,
+			            		"content":this.textArea,
+			            		"type":'1',
+			            	}
+			            }
+			          }
+			        }
+				},
+				
+			});
+			//图片显示
+			var ImgShow=Vue.extend({
+				props:['title','fontsize','index','id'],
+				data:function(){
+					return{
+						imgSrc:'icon/addd.png',
+						imgInfor:'',
+					}
+				},
+				template:'<div class="img c">'+
+					'<span><i>*</i>{{title}}</span>'+
+					'<div class="imgUpdate">'+
+						'<img :src="imgSrc"/>'+
+						'<input type="file" class="addfile" @click="addfile($event)" accept="image/*"/>'+
+					'</div>'+
+				'</div>',
+				mounted:function(){
+					this.$parent.list[this.index]='';
+				},
+				methods:{
+					addfile:function(e){
+						var that=this;
+						$(e.currentTarget).on("change", function() {
+							$(this).unbind();
+							var formdata = new FormData();
+							that.imgSrc='icon/12.gif';
+							var data=JSON.stringify({'type':'9','category':'0'});
+							formdata.append("data", data);
+							formdata.append("file", $(this).get(0).files[0]);
+							imgVideoAudioSub(formdata,function(data){
+								console.log(data);
+								if(data.code==0){
+									that.imgSrc=data.data.fileInfo.url,
+									that.imgInfor=data.data;
+									that.$parent.list[that.index]={
+					            		"id":that.id,
+					            		"content":data.data.fileInfo.url,
+					            		"fileId":data.data.fileInfoID,
+					            		"type":'2'
+					            	}
+								}else{
+									that.imgSrc='icon/addd.png'
+									that.imgInfor='';
+									that.$parent.list[that.index]='';
+								}
+							})
+						})
+					},
+				}
+			});
+			//视频显示
+			var VideoShow=Vue.extend({
+				props:['title','fontsize','index','id'],
+				data:function(){
+					return{
+						videoSrc:'icon/addd.png',
+						videoInfor:'',
+						video:false,
+						addvideo:true,
+						videoInforSrc:'',
+					}
+				},
+				template:'<div class="video c">'+
+					'<span><i>*</i>{{title}}</span>'+
+					'<div id="progress"></div>'+
+					'<div class="videoShow" v-if="video">'+
+						'<video :src="videoInforSrc" v-if="video" controls></video>'+
+					'</div>'+
+					
+					'<div class="imgUpdate" v-if="addvideo" >'+
+						'<img :src="videoSrc"/>'+
+						'<input type="file" class="addfile" accept="video/*" @click="addVideo($event)"/>'+
+					'</div>'+
+				'</div>',
+				mounted:function(){
+					this.$parent.list[this.index]=''
+				},
+				methods:{
+					addVideo:function(e){
+						var that=this;
+						$(e.currentTarget).on("change", function() {
+							var jqureAjaxXhrOnProgress = function(fun) {
+								jqureAjaxXhrOnProgress.onprogress = fun; //绑定监听
+								//使用闭包实现监听绑
+								return function() {
+									//通过$.ajaxSettings.xhr();获得XMLHttpRequest对象
+									var xhr = $.ajaxSettings.xhr();
+									//判断监听函数是否为函数
+									if(typeof jqureAjaxXhrOnProgress.onprogress !== 'function')
+										return xhr;
+									//如果有监听函数并且xhr对象支持绑定时就把监听函数绑定上去
+									if(jqureAjaxXhrOnProgress.onprogress && xhr.upload) {
+										xhr.upload.onprogress = jqureAjaxXhrOnProgress.onprogress;
+									}
+									return xhr;
+								}
+							}
+							$(this).unbind();
+							var formdata = new FormData();
+							var data=JSON.stringify({'type':'9','category':'1'});
+							formdata.append("data", data);
+							formdata.append("file", $(this).get(0).files[0]);
+							$.ajax({
+								type:"post",
+								url:"http://jilizuo.sie.edu.cn:8080/SYSmart/file/basic/v1/upload",
+								data:formdata,
+								processData: false,
+								contentType: false,
+								xhr: jqureAjaxXhrOnProgress(function(e) {
+									var percent = e.loaded / e.total;
+									$("#progress").css("display","block");
+									$('#progress').css("width", percent * 100 + '%');
+									$('#progress').html(parseInt(percent * 100) + '%');
+									if(parseInt(percent * 100) == 100) {
+										$('#progress').html("数据正在解码中,请稍后...");
+										$('#progress').css("color", "#fff");
+									}
+								}),
+								success:function(d){
+									console.log(d);
+									if(d.code==0) {
+										that.videoInfor = d.data;
+										$('#progress').html("解码成功！");
+										$('#progress').css("color", "#000");
+										$('#progress').css("background", "#00FF00");
+										that.videoInforSrc=d.data.fileInfo.url;
+										that.video=true;
+										that.addvideo=false;
+										that.$parent.list[that.index]={
+						            		"id":that.id,
+						            		"content":d.data.fileInfo.url,
+						            		"fileId":d.data.fileInfoID,
+						            		"type":'4'
+						            	   }
+									} else {
+										$('#progress').html('上传失败!请重新下载!');
+										$('#progress').css('background', "#FC0511");
+										that.video=false;
+										that.addvideo=true;
+										that.$parent.list[that.index]='';
+
+									}
+								},
+								error:function(e){
+									console.log(e);
+								}
+							})
+
+						})
+					},
+				}
+			})
+			//音频显示
+			var AudioShow=Vue.extend({
+				props:['title','fontsize','index','id'],
+				data:function(){
+					return{
+						audioSrc:'icon/addd.png',
+						audioInfor:'',
+						audioInforSrc:'',
+						audio:false,
+						audioAdd:true
+					}
+				},
+				template:'<div class="audio c">'+
+					'<span><i>*</i>{{title}}</span>'+
+					'<div id="profrde"></div>'+
+					'<div class="audioShow" v-if="audio">'+
+						'<audio :src="audioInforSrc" v-if="audio" controls></audio>'+
+					'</div>'+
+					
+					'<div class="imgUpdate" v-if="audioAdd">'+
+						'<img :src="audioSrc"/>'+
+						'<input type="file" class="addfile" accept="audio/*"  @click="addAudio($event)"/>'+
+					'</div>'+
+				'</div>',
+				mounted:function(){
+					this.$parent.list[this.index]='';
+				},
+				methods:{
+					addAudio:function(e){
+						var that=this;
+						$(e.currentTarget).on("change", function() {
+							var jqureAjaxXhrOnProgress = function(fun) {
+								jqureAjaxXhrOnProgress.onprogress = fun; //绑定监听
+								//使用闭包实现监听绑
+								return function() {
+									//通过$.ajaxSettings.xhr();获得XMLHttpRequest对象
+									var xhr = $.ajaxSettings.xhr();
+									//判断监听函数是否为函数
+									if(typeof jqureAjaxXhrOnProgress.onprogress !== 'function')
+										return xhr;
+									//如果有监听函数并且xhr对象支持绑定时就把监听函数绑定上去
+									if(jqureAjaxXhrOnProgress.onprogress && xhr.upload) {
+										xhr.upload.onprogress = jqureAjaxXhrOnProgress.onprogress;
+									}
+									return xhr;
+								}
+							}
+							$(this).unbind();
+							var formdata = new FormData();
+							var data=JSON.stringify({'type':'9','category':'2'});
+							formdata.append("data", data);
+							formdata.append("file", $(this).get(0).files[0]);
+							$.ajax({
+								type:"post",
+								url:"http://jilizuo.sie.edu.cn:8080/SYSmart/file/basic/v1/upload",
+								data:formdata,
+								processData: false,
+								contentType: false,
+								xhr: jqureAjaxXhrOnProgress(function(e) {
+									var percent = e.loaded / e.total;
+									$("#profrde").css("display","block");
+									$('#profrde').css("width", percent * 100 + '%');
+									$('#profrde').html(parseInt(percent * 100) + '%');
+									if(parseInt(percent * 100) == 100) {
+										$('#profrde').html("数据正在解码中,请稍后...");
+										$('#profrde').css("color", "#fff");
+									}
+								}),
+								success:function(d){
+									console.log(d);
+									if(d.code==0) {
+										that.audioInfor = d.data;
+										$('#profrde').html("解码成功！");
+										$('#profrde').css("color", "#000");
+										$('#profrde').css("background", "#00FF00");
+										that.audioInforSrc=d.data.fileInfo.url;
+										that.audio=true;
+										that.audioAdd=false;
+										that.$parent.list[that.index]={
+						            		"id":that.id,
+						            		"content":d.data.fileInfo.url,
+						            		"fileId":d.data.fileInfoID,
+						            		"type":'3'
+						            	}
+									} else {
+										$('#profrde').html('上传失败!请重新下载!');
+										$('#profrde').css('background', "#FC0511");
+										that.audio=false;
+										that.audioAdd=true;
+										that.$parent.list[that.index]='';
+									}
+								},
+								error:function(e){
+									console.log(e);
+								}
+							})
+						})
+					}
+				}
+			});
+			//富文本
+			var RichText=Vue.extend({
+				props:['title','fontsize','index','id'],
+				data:function(){
+					return{
+						contentEdit:''
+					}
+				},
+				template:'<div class="fuText c">'+
+					'<span><i>*</i>富文本</span>'+
+					'<textarea id="demo" name="demo"  lay-filter="demo"  style="display:none"></textarea>'+
+//					'<button @click="subnit()">保存</button>'+
+				'</div>',
+				mounted:function(){
+					this.$parent.list[this.index]='';
+					layui.use('layedit', function(){
+					  var layedit = layui.layedit;
+					  contentEdit=layedit.build('demo',{
+					  	tool: ['strong' //加粗
+							  ,'italic' //斜体
+							  ,'underline' //下划线
+							  ,'del' //删除线
+							  
+							  ,'|' //分割线
+							  
+							  ,'left' //左对齐
+							  ,'center' //居中对齐
+							  ,'right' //右对齐
+							  ,'link' //超链接
+							  ,'unlink' //清除链接
+							  ,'face' //表情
+							  ]
+					  }); //建立编辑器
+					  
+					  layedit.getContent(this.contentEdit, null);
+					});
+					console.log(this.contentEdit);
+				},
+				methods:{
+					subnit:function(){
+					    this.$parent.list[this.index]={
+					    	"id":this.id,
+			            	"content":$("iframe[textarea=demo]").contents().find("body").html(),
+			            	"type":'5',
+					    };
+					}
+				}
+			});
+			var vue=new Vue({
+				el:"#sub",
+				components:{
+					"text_area":TextArea,
+					"img_show":ImgShow,
+					"video_show":VideoShow,
+					"audio_show":AudioShow,
+					"rich_text":RichText
+				},
+				data:function(){
+					return{
+						test:[],
+						list:[]
+				
+					}
+				},
+				beforeMount:function(){
+					var that=this;
+					var token='81CA2C85D5A20F03A9AC49005C2D9C99';
+					var data={'activityID':'1','parentID':'0'}
+					subDate(token,data,function(data){
+						console.log(data);
+						for(var i=0;i<data.data.length;i++){
+							if(data.data[i].type=='1'){
+								that.test.push({
+									"component":TextArea,
+									"title":data.data[i].title,
+									'fontsize':data.data[i].fontSize,
+									'index':i,
+									"id":data.data[i].activityFormatID
+								})
+							}else if(data.data[i].type=='2'){
+								that.test.push({
+									"component":ImgShow,
+									"title":data.data[i].title,
+									'fontsize':data.data[i].fontSize,
+									'index':i,
+									"id":data.data[i].activityFormatID
+								})
+							}else if(data.data[i].type=='4'){
+								that.test.push({
+									"component":VideoShow,
+									"title":data.data[i].title,
+									'fontsize':data.data[i].fontSize,
+									'index':i,
+									"id":data.data[i].activityFormatID
+								})
+							}else if(data.data[i].type=='3'){
+								that.test.push({
+									"component":AudioShow,
+									"title":data.data[i].title,
+									'fontsize':data.data[i].fontSize,
+									'index':i,
+									"id":data.data[i].activityFormatID
+								})
+							}else if(data.data[i].type=='5'){
+								that.test.push({
+									"component":RichText,
+									"title":data.data[i].title,
+									'fontsize':data.data[i].fontSize,
+									'index':i,
+									"id":data.data[i].activityFormatID
+								})
+							}
+						}
+						console.log(that.test);
+					})
+				},
+				mounted:function(){
+					
+				},
+				methods:{
+					subInfor:function(){
+//						console.log(this.$refs.childs);
+                        for(var i=0;i<this.$refs.childs.length;i++){
+                        	if(typeof this.$refs.childs[i].subnit!='function'){
+                        		
+                        	}else{
+                        		this.$refs.childs[i].subnit();
+                        	}
+                        	
+                        }
+						
+						for(var i=0;i<this.list.length;i++){
+							if(this.list[i]==''){
+								sweetAlert("出错了", "还有一些选项没有填写哦，请确认后提交！","error");
+							}else{
+								var account='1';
+								var data={'activityID':'1',
+											'targetType':'1' ,
+											'targetID':'1',
+											'activityFormatID':this.list[i].id,
+											'formatType':this.list[i].type,
+											'content':this.list[i].content,
+											'contentID':'-1'}
+							    if(this.list[i].type=='2' || this.list[i].type=='3'|| this.list[i].type=='4'){
+							    	data.contentID=this.list[i].fileId;
+							    }else{
+							    	delete data['contentID'];
+							    };
+							    var token='81CA2C85D5A20F03A9AC49005C2D9C99';
+							   layui.layer.load();
+							    workInforSubmit(account,data,token,function(data){
+							    	console.log(data);
+							    	layer.closeAll('loading');
+							    	if(data.code==0){
+							    		
+							    	}else{
+							    		sweetAlert("出错了", data.message,"error");
+							    	}
+							    })
+							    
+							}
+						}
+						console.log(this.list);
+					},
+				}
+			})
+		</script>
+	</body>
+</html>

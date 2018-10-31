@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" type="text/css" href="css/sweetalert.css"/>
+		<link rel="stylesheet" href="layui/css/layui.css" />
+		<link rel="stylesheet" href="css/preview.css" />
+		<script type="text/javascript" src="layui/layui.all.js" ></script>
+		<script type="text/javascript" src="js/jquery-1.11.3.js" ></script>
+		<script type="text/javascript" src="js/vue.js" ></script>
+		<script type="text/javascript" src="js/sweetalert.min.js" ></script>
+		<script type="text/javascript" src="js/ajax.js" ></script>
+		<title>沈阳教育平台-预览</title>
+	</head>
+	<body>
+		<div id="preview">
+			<div class="margin">
+		        <div v-for="(todo,index) in test" :is="todo.component" :title="todo.title" :fontsize="todo.fontsize" :content="todo.content" :index="index"></div>
+			</div>
+		</div>
+		
+		<script>
+			var TextArea=Vue.extend({
+				props:['title','fontsize','content'],
+				data:function(){
+					return{
+						size:''
+					}
+				},
+				template:'<div class="img">'+
+					'<div class="title">{{title}}</div>'+
+					'<div class="content" :style="size">{{content}}</div>'+
+				'</div>',
+				mounted:function(){
+					console.log(this.fontsize);
+					if(this.fontsize=='undefined' || this.fontsize=='null'){
+						this.size='font-size:12px';
+					}else{
+						this.size='font-size:'+this.fontsize+'px';
+					}
+				}
+				
+			});
+			var ImgShow=Vue.extend({
+				props:['title','fontsize','content'],
+				template:'<div class="img">'+
+					'<div class="title">{{title}}</div>'+
+					'<div class="content">'+
+						'<img :src="content"/>'+
+					'</div>'+
+				'</div>'
+			});
+			var VideoShow=Vue.extend({
+				props:['title','fontsize','content'],
+				template:'<div class="img">'+
+					'<div class="title">{{title}}</div>'+
+					'<div class="content">'+
+						'<video :src="content" controls="controls"></video>'+
+					'</div>'+
+				'</div>'
+			});
+			var AudioShow=Vue.extend({
+				props:['title','fontsize','content'],
+				template:'<div class="img">'+
+					'<div class="title">{{title}}</div>'+
+					'<div class="content">'+
+						'<audio :src="content" controls="controls"></audio>'+
+					'</div>'+
+				'</div>'
+			});
+			var RichText=Vue.extend({
+				props:['title','fontsize','content'],
+				template:'<div class="img">'+
+					'<div class="title">{{title}}</div>'+
+					'<div class="content" v-html="content"></div>'+
+				'</div>'
+			})
+			var vue=new Vue({
+				el:"#preview",
+				components:{
+					"text_area":TextArea,
+					"img_show":ImgShow,
+					"video_show":VideoShow,
+					"audio_show":AudioShow,
+					"rich_text":RichText
+				},
+				data:function(){
+					return{
+						test:[]
+					}
+				},
+				mounted:function(){
+					var that=this;
+					var account='1';
+					var token='9873A6B7D295D684CB4CA00C2E78E0DF';
+					var data={'activityID':'1'};
+					worksDetail(token,data,account,function(data){
+						console.log(data);
+					    var dateInfor=data.data.activityWorksList;
+						for(var i=0;i<dateInfor.length;i++){
+							if(dateInfor[i].activityFormat.type=='1'){
+								that.test.push({
+									"component":TextArea,
+									"title":dateInfor[i].activityFormat.title,
+									'fontsize':dateInfor[i].activityFormat.fontSize,
+									"content":dateInfor[i].content
+								})
+							}else if(dateInfor[i].activityFormat.type=='2'){
+								that.test.push({
+									"component":ImgShow,
+									"title":dateInfor[i].activityFormat.title,
+									'fontsize':dateInfor[i].activityFormat.fontSize,
+									"content":dateInfor[i].content
+								})
+							}else if(dateInfor[i].activityFormat.type=='4'){
+								that.test.push({
+									"component":VideoShow,
+									"title":dateInfor[i].activityFormat.title,
+									'fontsize':dateInfor[i].activityFormat.fontSize,
+									"content":dateInfor[i].content
+								})
+							}else if(dateInfor[i].activityFormat.type=='3'){
+								that.test.push({
+									"component":AudioShow,
+									"title":dateInfor[i].activityFormat.title,
+									'fontsize':dateInfor[i].activityFormat.fontSize,
+									"content":dateInfor[i].content
+								})
+							}else if(dateInfor[i].activityFormat.type=='5'){
+								that.test.push({
+									"component":RichText,
+									"title":dateInfor[i].activityFormat.title,
+									'fontsize':dateInfor[i].activityFormat.fontSize,
+									"content":dateInfor[i].content
+								})
+							}
+						
+						}
+					})
+				},
+				methods:{
+					
+				}
+			})
+		</script>
+	</body>
+</html>
